@@ -3,14 +3,35 @@ local data_path = vim.fn.stdpath("data")
 local Job = require("plenary.job")
 
 local M = {}
+local branch_key_cache = {}
 
 M.data_path = data_path
 
-function M.project_key()
-    return vim.loop.cwd()
+local function is_non_empty(value)
+    return value ~= nil and #value > 0 and not M.is_white_space(value)
 end
 
-function M.branch_key()
+local function dirname(path)
+    return path:match("^(.*)/[^/]+/?$")
+end
+
+local function get_jj_root()
+    local path = vim.loop.cwd()
+
+    while path do
+        if vim.loop.fs_stat(path .. "/.jj") then
+            return path
+        end
+
+        local parent = dirname(path)
+        if parent == path then
+            break
+        end
+        path = parent
+    end
+end
+
+local function get_git_branch()
     local branch
 
     -- use tpope's fugitive for faster branch name resolution if available
@@ -31,11 +52,71 @@ function M.branch_key()
         })[1]
     end
 
-    if branch then
-        return vim.loop.cwd() .. "-" .. branch
-    else
-        return M.project_key()
+    if is_non_empty(branch) then
+        return branch
     end
+end
+
+local function get_jj_branch()
+    if vim.fn.executable("jj") ~= 1 then
+        return nil
+    end
+
+    local jj_root = get_jj_root()
+
+    if jj_root == nil then
+        return nil
+    end
+
+    local branch = M.get_os_command_output({
+        "jj",
+        "--ignore-working-copy",
+        "log",
+        "-r",
+        "heads(::@ & bookmarks())",
+        "--no-graph",
+        "-T",
+        "bookmarks",
+    }, jj_root)[1]
+
+    if is_non_empty(branch) then
+        return branch
+    end
+end
+
+function M.project_key()
+    return vim.loop.cwd()
+end
+
+function M.clear_branch_key_cache()
+    branch_key_cache = {}
+end
+
+function M.branch_key()
+    local cwd = vim.loop.cwd()
+    local cached_branch_key = branch_key_cache[cwd]
+
+    if cached_branch_key ~= nil then
+        return cached_branch_key
+    end
+
+    local branch = get_jj_branch()
+
+    if branch == nil then
+        branch = get_git_branch()
+    end
+
+    local branch_key
+
+    if is_non_empty(branch) then
+        branch_key = cwd .. "-" .. branch
+    else
+        branch_key = cwd
+    end
+
+    branch_key_cache[cwd] = branch_key
+
+    return branch_key
 end
 
 function M.normalize_path(item)

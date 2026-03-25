@@ -156,7 +156,7 @@ global_settings = {
     -- filetypes that you want to prevent from adding to the harpoon list menu.
     excluded_filetypes = { "harpoon" },
 
-    -- set marks specific to each git branch inside git repository
+    -- set marks specific to each git branch / jj bookmark inside a repo
     mark_branch = false,
 
     -- enable tabline with harpoon marks

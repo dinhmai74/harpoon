@@ -22,6 +22,13 @@ vim.api.nvim_create_autocmd({ "BufLeave", "VimLeave" }, {
     group = the_primeagen_harpoon,
 })
 
+vim.api.nvim_create_autocmd({ "DirChanged", "FocusGained", "ShellCmdPost", "TermClose" }, {
+    callback = function()
+        require("harpoon.utils").clear_branch_key_cache()
+    end,
+    group = the_primeagen_harpoon,
+})
+
 vim.api.nvim_create_autocmd("FileType", {
     pattern = "harpoon",
     group = the_primeagen_harpoon,
