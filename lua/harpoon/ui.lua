@@ -146,12 +146,14 @@ function M.toggle_quick_menu()
             )
         )
     end
-    vim.cmd(
-        string.format(
-            "autocmd BufModifiedSet <buffer=%s> set nomodified",
-            Harpoon_bufh
+    if vim.fn.exists("##BufModifiedSet") == 1 then
+        vim.cmd(
+            string.format(
+                "autocmd BufModifiedSet <buffer=%s> set nomodified",
+                Harpoon_bufh
+            )
         )
-    )
+    end
     vim.cmd(
         "autocmd BufLeave <buffer> ++nested ++once silent lua require('harpoon.ui').toggle_quick_menu()"
     )
